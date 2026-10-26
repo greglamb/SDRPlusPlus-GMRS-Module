@@ -143,6 +143,7 @@ public:
         gui::menu.removeEntry(name);
         running = false;
         if (monitorThread.joinable()) { monitorThread.join(); }
+        setRadioMuted(false);
         if (enabled) {
             bank.stop();
             sigpath::vfoManager.deleteVFO(vfo);
@@ -171,6 +172,7 @@ public:
 
     void disable() {
         scanOn = false;
+        setRadioMuted(false);
         bank.stop();
         sigpath::vfoManager.deleteVFO(vfo);
         enabled = false;
@@ -202,6 +204,7 @@ private:
         autoPlay = c.value("autoPlay", false);
         autoScan = c.value("autoScan", false);
         scanMode = c.value("scanMode", 0);
+        scanMute = c.value("scanMute", true);
         scanHang = c.value("scanHangSeconds", 3.0f);
         scanDwell = c.value("scanDwellSeconds", 2.0f);
         scanSkip.clear();
@@ -266,6 +269,7 @@ private:
         c["autoPlay"] = autoPlay;
         c["autoScan"] = autoScan;
         c["scanMode"] = scanMode;
+        c["scanMute"] = scanMute;
         c["scanHangSeconds"] = scanHang;
         c["scanDwellSeconds"] = scanDwell;
         c["scanSkip"] = scanSkip;
@@ -451,18 +455,19 @@ private:
     // between the 462 and 467 blocks every `scanDwell` seconds while idle.
     // Called from the monitor thread with bank mutex + logMtx held.
     void scanTick(double now, ChannelSet& chans) {
-        if (!scanOn) { scanParked = -1; return; }
+        if (!scanOn) { scanParked = -1; setRadioMuted(false); return; }
         int parked = scanParked.load();
         if (parked >= 0) {
             if (parked >= (int)chans.size()) { scanParked = -1; }
-            else if (chans[parked]->busy.load()) { scanLastActive = now; return; }      // still talking
-            else if (now - scanLastActive < scanHang) { return; }                         // hang time
+            else if (chans[parked]->busy.load()) { scanLastActive = now; setRadioMuted(false); return; }   // still talking
+            else if (now - scanLastActive < scanHang) { setRadioMuted(scanMute); return; }                  // hang time
             else {
                 flog::info("FRS/GMRS Monitor: scan resumed");
                 scanParked = -1;
                 scanIdleSince = now;
             }
         }
+        setRadioMuted(scanMute);
         if (now < scanBlankUntil) { return; }
 
         int best = -1; double bestSince = 1e300; bool bestWatched = false;
@@ -485,6 +490,7 @@ private:
             scanLastActive = now;
             selected = best;
             tuneRadio(ch.freqHz, frsmon::frsChannel(ch.number).wide);
+            setRadioMuted(false);
             flog::info("FRS/GMRS Monitor: scan stopped on ch {}", frsmon::frsChannelLabel(ch.number));
             return;
         }
@@ -552,10 +558,34 @@ private:
         return true;
     }
 
+    // Mute = close the Radio's power squelch (level 0 dB, nothing passes), restoring the
+    // user's squelch mode/level on unmute. No calibration needed, works on any SDR++.
+    void setRadioMuted(bool mute) {
+        if (mute == radioMuted) { return; }
+        std::string target;
+        { std::lock_guard<std::mutex> lck(uiMtx); target = radioVfo; }
+        if (target.empty()) { return; }
+        if (mute) {
+            int mode = 0; float level = -100.0f;
+            core::modComManager.callInterface(target, RADIO_IFACE_CMD_GET_SQUELCH_MODE, NULL, &mode);
+            core::modComManager.callInterface(target, RADIO_IFACE_CMD_GET_SQUELCH_LEVEL, NULL, &level);
+            savedSquelchMode = mode; savedSquelchLevel = level;
+            int power = 1;              // SQUELCH_MODE_POWER (== "enabled" on older SDR++)
+            float closed = 0.0f;
+            core::modComManager.callInterface(target, RADIO_IFACE_CMD_SET_SQUELCH_MODE, &power, NULL);
+            core::modComManager.callInterface(target, RADIO_IFACE_CMD_SET_SQUELCH_LEVEL, &closed, NULL);
+        } else {
+            core::modComManager.callInterface(target, RADIO_IFACE_CMD_SET_SQUELCH_LEVEL, &savedSquelchLevel, NULL);
+            core::modComManager.callInterface(target, RADIO_IFACE_CMD_SET_SQUELCH_MODE, &savedSquelchMode, NULL);
+        }
+        radioMuted = mute;
+    }
+
     // GUI thread: manual listen. Stops the scanner (like pressing a channel on a scanner).
     void listenTo(int number) {
         scanOn = false;
         scanParked = -1;
+        setRadioMuted(false);
         const auto& fc = frsmon::frsChannel(number);
         if (tuneRadio(fc.freqHz, fc.wide)) {
             std::lock_guard<std::mutex> lck(uiMtx);
@@ -679,6 +709,8 @@ private:
             if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Presses Play once everything is loaded (like sdrpp --autostart).\nEnv override: FRSGMRS_AUTOPLAY=1"); }
             if (ImGui::Checkbox(CONCAT("Start scanning when the SDR starts##frsmon_autoscan_", name), &autoScan)) { saveConfig(); }
             if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Centres the SDR on the block and turns Scan on as soon as the SDR is running.\nEnv overrides: FRSGMRS_SCAN=1, FRSGMRS_BLOCK=462|467, FRSGMRS_SCAN_MODE=this|both"); }
+            if (ImGui::Checkbox(CONCAT("Mute Radio while scanning (until something keys up)##frsmon_scanmute_", name), &scanMute)) { saveConfig(); }
+            if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Closes the Radio squelch between transmissions and restores your squelch setting afterwards.\nOff: you hear the Radio's own squelch (set it yourself)."); }
             ImGui::LeftLabel("Scan hang time");
             ImGui::SetNextItemWidth(menuWidth - ImGui::GetCursorPosX());
             if (ImGui::SliderFloat(CONCAT("##frsmon_hang_", name), &scanHang, 0.5f, 10.0f, "%.1f s")) { saveConfig(); }
@@ -788,7 +820,8 @@ private:
         } else {
             int sq = 0;   // 0 = off in every SDR++ version (bool or SquelchMode enum)
             core::modComManager.callInterface(target, RADIO_IFACE_CMD_GET_SQUELCH_MODE, NULL, &sq);
-            if (sq == 0) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "Tip: turn on the Radio squelch so idle channels are quiet"); }
+            if (radioMuted) { ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1), "Radio muted until something keys up"); }
+            else if (!scanMute && sq == 0) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "Tip: turn on the Radio squelch so idle channels are quiet"); }
         }
     }
 
@@ -1079,6 +1112,7 @@ private:
     int logMaxRows = 2000;
     std::vector<Preset> presets;            // logMtx
     int scanMode = 0;                       // 0 = this block, 1 = both (hop)
+    bool scanMute = true;                   // close the Radio squelch while nothing is parked
     float scanHang = 3.0f;                  // s after the carrier drops before resuming
     float scanDwell = 2.0f;                 // s idle on a block before hopping (both mode)
     std::vector<int> scanSkip;              // channel numbers the scanner ignores (logMtx)
@@ -1101,6 +1135,8 @@ private:
     std::string radioVfo;             // name of the Radio module's VFO (GUI thread refreshes)
     int listenChannel = -1;           // channel the Radio VFO currently sits on
     bool warnedNoRadio = false;
+    bool radioMuted = false;                // we closed the Radio squelch
+    int savedSquelchMode = 0; float savedSquelchLevel = -100.0f;
 };
 
 MOD_EXPORT void _INIT_() {

@@ -135,6 +135,10 @@ Monitor`), press **+**. A new *FRS/GMRS Monitor* section appears in the left men
    nothing is heard, so you cover all 30 channels. Right-click a key or row →
    *Skip in scan* to lock a channel out (shown in red). Clicking a key or
    *Listen* stops the scan, like pressing a channel on a hardware scanner.
+   While nothing is parked the Radio is muted (its squelch is closed and
+   your own squelch setting restored when something keys up), so scanning is
+   silent instead of FM hiss; *Options → Mute Radio while scanning* turns
+   that off if you'd rather run the Radio's own squelch.
 6. **Log** / **Presets** / **Keys** checkboxes show the log window, the preset
    editor and the channel keys. *Export CSV* writes
    `frsgmrs_log_<date>.csv` into the SDR++ root (config) folder.
@@ -215,6 +219,7 @@ CTCSS tones have no polarity.
 | Alert on watched presets | flashes the row and logs when a watched preset is heard |
 | Hold last code | how long a code stays on the board after the transmission (1–60 min) |
 | Scan hang time | seconds to stay on a channel after its carrier drops |
+| Mute Radio while scanning | close the Radio squelch between transmissions (default on) |
 | Scan dwell per block | seconds to listen on each block before hopping (Both-blocks mode) |
 | Start the SDR when SDR++ opens / Start scanning when the SDR starts | start-up automation, see above |
 
