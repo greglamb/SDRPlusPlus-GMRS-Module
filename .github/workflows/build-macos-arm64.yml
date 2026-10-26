@@ -5,6 +5,11 @@
 # The app is unsigned: after unzipping, run
 #   xattr -dr com.apple.quarantine SDR++.app
 # once, or right-click → Open the first time.
+#
+# Releases: fill in "release_tag" when running it manually (e.g. v0.2.0), or
+# push a tag matching v* — either way the zip is attached to a GitHub release
+# of that tag with generated notes. Leave release_tag empty for a plain build
+# whose zip is only a run artifact.
 name: Build macOS (Apple Silicon)
 
 on:
@@ -20,11 +25,24 @@ on:
         default: Release
         type: choice
         options: [Release, RelWithDebInfo, Debug]
+      release_tag:
+        description: "Create a GitHub release with this tag (e.g. v0.2.0); empty = artifact only"
+        required: false
+        default: ""
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # to create the release
 
 jobs:
   build:
     runs-on: macos-15   # arm64 runner
     timeout-minutes: 90
+    env:
+      SDRPP_REF: ${{ inputs.sdrpp_ref || 'master' }}
+      BUILD_TYPE: ${{ inputs.build_type || 'Release' }}
+      RELEASE_TAG: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
 
     steps:
       - name: Check out this module
@@ -36,7 +54,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: AlexandreRouma/SDRPlusPlus
-          ref: ${{ inputs.sdrpp_ref }}
+          ref: ${{ env.SDRPP_REF }}
           path: sdrpp
 
       - name: Install dependencies (Homebrew)
@@ -51,7 +69,7 @@ jobs:
       - name: Configure
         run: |
           cmake -S sdrpp -B build \
-            -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
             -DUSE_BUNDLE_DEFAULTS=ON \
@@ -85,6 +103,8 @@ jobs:
           MOD_SHA=$(git -C "$GITHUB_WORKSPACE/module" rev-parse --short HEAD)
           ZIP="SDRpp-GMRS-macos-arm64-sdrpp_${SDRPP_SHA}-mod_${MOD_SHA}.zip"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+          echo "SDRPP_SHA=$SDRPP_SHA" >> "$GITHUB_ENV"
+          echo "SDRPP_LONG_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           ditto -c -k --keepParent SDR++.app "$GITHUB_WORKSPACE/$ZIP" 2>/dev/null || zip -qry "$GITHUB_WORKSPACE/$ZIP" SDR++.app
 
       - name: Upload SDR++.app
@@ -94,3 +114,29 @@ jobs:
           path: ${{ env.ZIP }}
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create GitHub release
+        if: env.RELEASE_TAG != ''
+        working-directory: module
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<EOF
+          SDR++ (Apple Silicon) with the FRS/GMRS Monitor module built in.
+
+          - SDR++: [\`${SDRPP_SHA}\`](https://github.com/AlexandreRouma/SDRPlusPlus/commit/${SDRPP_LONG_SHA}) (ref \`${SDRPP_REF}\`), ${BUILD_TYPE}
+          - Module: \`$(git rev-parse --short HEAD)\`
+          - Sources: RTL-SDR, Airspy, Airspy HF+, HackRF, File · Sink: PortAudio
+
+          **Install:** unzip, move \`SDR++.app\` to Applications, then once:
+          \`\`\`
+          xattr -dr com.apple.quarantine /Applications/SDR++.app
+          \`\`\`
+          Enable the module in *Module Manager* → \`frsgmrs_monitor\`.
+          EOF
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$GITHUB_WORKSPACE/$ZIP" --clobber
+          else
+            gh release create "$RELEASE_TAG" "$GITHUB_WORKSPACE/$ZIP" \
+              --title "FRS/GMRS Monitor $RELEASE_TAG" --notes-file notes.md --generate-notes
+          fi

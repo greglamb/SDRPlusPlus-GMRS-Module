@@ -45,10 +45,15 @@ to C++ and verified sample-for-sample against it (`tests/run_parity.py`).
 
 ## Prebuilt macOS app (Apple Silicon)
 
-The **Build macOS (Apple Silicon)** workflow under the repo's *Actions* tab
-builds SDR++ with this module baked in, on demand (*Run workflow* → pick the
-SDR++ ref, default `master`). Download `SDR++-macos-arm64` from the run's
-artifacts, unzip, and because it's unsigned run once:
+Check the repo's **Releases** page first — each release is SDR++ (built from
+[AlexandreRouma/SDRPlusPlus](https://github.com/AlexandreRouma/SDRPlusPlus)
+master, unmodified) with this module baked in.
+
+To make a new one, run the **Build macOS (Apple Silicon)** workflow under the
+*Actions* tab (*Run workflow* → pick the SDR++ ref, default `master`, and a
+`release_tag` such as `v0.2.0`); pushing a `v*` tag does the same. Leave the
+tag empty for a plain build, whose zip is only a run artifact
+(`SDR++-macos-arm64`). Either way, unzip and, because the app is unsigned, run once:
 
 ```sh
 xattr -dr com.apple.quarantine SDR++.app
