@@ -33,16 +33,18 @@ Ch  Level     Code              Who     Last
 1. Download the latest zip from the **[Releases](../../releases)** page. Each
    release is SDR++ itself (built from
    [AlexandreRouma/SDRPlusPlus](https://github.com/AlexandreRouma/SDRPlusPlus)
-   master, unmodified — the exact commit is in the release title) with this
-   module built in, plus the RTL-SDR, Airspy, Airspy HF+, HackRF and File
+   master — the exact commit is in the release title; the only change is one
+   line in the default config that enables this module) with this module
+   built in, plus the RTL-SDR, Airspy, Airspy HF+, HackRF and File
    sources and the PortAudio audio sink.
 2. Unzip, move `SDR++.app` to Applications. The app is unsigned, so once:
    ```sh
    xattr -dr com.apple.quarantine /Applications/SDR++.app
    ```
-3. Open SDR++ → **Module Manager** → pick `frsgmrs_monitor`, give it a name
-   (e.g. `FRS/GMRS Monitor`), press **+**. A new *FRS/GMRS Monitor* section
-   appears in the left menu.
+3. Open SDR++. On a fresh install the *FRS/GMRS Monitor* section is already
+   in the left menu. If you had SDR++ configured before (an existing
+   `config.json`), add it once: **Module Manager** → pick `frsgmrs_monitor`,
+   give it a name (e.g. `FRS/GMRS Monitor`), press **+**.
 
 Why a whole app and not a drop-in file: SDR++ has no stable module ABI, so a
 module only loads into the exact SDR++ build it was compiled with. The

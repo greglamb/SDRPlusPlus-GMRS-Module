@@ -66,6 +66,16 @@ jobs:
       - name: Wire the module into the SDR++ tree
         run: sh "$GITHUB_WORKSPACE/module/tools/install_in_tree.sh" "$GITHUB_WORKSPACE/sdrpp" --copy
 
+      # One-line patch to SDR++'s built-in default config so a fresh install
+      # already has the module enabled (an existing config.json is left alone,
+      # as SDR++ only applies defaults to missing top-level keys).
+      - name: Enable the module in SDR++'s default config
+        run: |
+          f=sdrpp/core/src/core.cpp
+          grep -q 'defConfig\["moduleInstances"\]\["Radio"\] = "radio";' "$f"
+          perl -0pi -e 's/(defConfig\["moduleInstances"\]\["Radio"\] = "radio";)/$1\n    defConfig["moduleInstances"]["FRS\/GMRS Monitor"] = "frsgmrs_monitor";/' "$f"
+          grep -n 'frsgmrs_monitor' "$f"
+
       - name: Configure
         run: |
           cmake -S sdrpp -B build \
@@ -128,7 +138,7 @@ jobs:
           cat > notes.md <<EOF
           SDR++ (Apple Silicon) with the FRS/GMRS Monitor module built in.
 
-          **Bundled SDR++: ${SDRPP_VER}**, master commit [\`${SDRPP_SHA}\`](https://github.com/AlexandreRouma/SDRPlusPlus/commit/${SDRPP_LONG_SHA}) of ${SDRPP_DATE} (ref \`${SDRPP_REF}\`, ${BUILD_TYPE} build, unmodified)
+          **Bundled SDR++: ${SDRPP_VER}**, master commit [\`${SDRPP_SHA}\`](https://github.com/AlexandreRouma/SDRPlusPlus/commit/${SDRPP_LONG_SHA}) of ${SDRPP_DATE} (ref \`${SDRPP_REF}\`, ${BUILD_TYPE} build; the only change is one line in the default config enabling this module)
 
           - Module: \`$(git rev-parse --short HEAD)\`
           - Sources: RTL-SDR, Airspy, Airspy HF+, HackRF, File · Sink: PortAudio
@@ -137,7 +147,7 @@ jobs:
           \`\`\`
           xattr -dr com.apple.quarantine /Applications/SDR++.app
           \`\`\`
-          Enable the module in *Module Manager* → \`frsgmrs_monitor\`.
+          *FRS/GMRS Monitor* is enabled out of the box on a fresh SDR++ config. If you already had SDR++ configured, add it once in *Module Manager* → \`frsgmrs_monitor\`.
           EOF
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$GITHUB_WORKSPACE/$ZIP" --clobber
