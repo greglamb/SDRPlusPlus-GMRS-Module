@@ -100,10 +100,14 @@ jobs:
           sh make_macos_bundle.sh "$GITHUB_WORKSPACE/build" ./SDR++.app
           ls SDR++.app/Contents/Plugins | grep -q frsgmrs_monitor
           SDRPP_SHA=$(git rev-parse --short HEAD)
+          SDRPP_VER=$(sed -n 's/#define VERSION_STR "\(.*\)"/\1/p' core/src/version.h)
+          SDRPP_DATE=$(git log -1 --format=%cs)
           MOD_SHA=$(git -C "$GITHUB_WORKSPACE/module" rev-parse --short HEAD)
-          ZIP="SDRpp-GMRS-macos-arm64-sdrpp_${SDRPP_SHA}-mod_${MOD_SHA}.zip"
+          ZIP="SDRpp-${SDRPP_VER}-${SDRPP_SHA}-GMRS-${MOD_SHA}-macos-arm64.zip"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
           echo "SDRPP_SHA=$SDRPP_SHA" >> "$GITHUB_ENV"
+          echo "SDRPP_VER=$SDRPP_VER" >> "$GITHUB_ENV"
+          echo "SDRPP_DATE=$SDRPP_DATE" >> "$GITHUB_ENV"
           echo "SDRPP_LONG_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           ditto -c -k --keepParent SDR++.app "$GITHUB_WORKSPACE/$ZIP" 2>/dev/null || zip -qry "$GITHUB_WORKSPACE/$ZIP" SDR++.app
 
@@ -124,7 +128,8 @@ jobs:
           cat > notes.md <<EOF
           SDR++ (Apple Silicon) with the FRS/GMRS Monitor module built in.
 
-          - SDR++: [\`${SDRPP_SHA}\`](https://github.com/AlexandreRouma/SDRPlusPlus/commit/${SDRPP_LONG_SHA}) (ref \`${SDRPP_REF}\`), ${BUILD_TYPE}
+          **Bundled SDR++: ${SDRPP_VER}**, master commit [\`${SDRPP_SHA}\`](https://github.com/AlexandreRouma/SDRPlusPlus/commit/${SDRPP_LONG_SHA}) of ${SDRPP_DATE} (ref \`${SDRPP_REF}\`, ${BUILD_TYPE} build, unmodified)
+
           - Module: \`$(git rev-parse --short HEAD)\`
           - Sources: RTL-SDR, Airspy, Airspy HF+, HackRF, File · Sink: PortAudio
 
@@ -138,5 +143,6 @@ jobs:
             gh release upload "$RELEASE_TAG" "$GITHUB_WORKSPACE/$ZIP" --clobber
           else
             gh release create "$RELEASE_TAG" "$GITHUB_WORKSPACE/$ZIP" \
-              --title "FRS/GMRS Monitor $RELEASE_TAG" --notes-file notes.md --generate-notes
+              --title "FRS/GMRS Monitor $RELEASE_TAG — SDR++ ${SDRPP_VER} (${SDRPP_SHA}, ${SDRPP_DATE})" \
+              --notes-file notes.md --generate-notes
           fi
