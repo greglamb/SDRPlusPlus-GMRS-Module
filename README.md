@@ -1,5 +1,7 @@
 # FRS/GMRS Monitor for SDR++
 
+> I asked Claude to help me figure out which Channel and Privacy Code my son's Super Mario Walkie Talkie used - then this was born...
+
 A module for [SDR++](https://github.com/AlexandreRouma/SDRPlusPlus) that
 watches **every FRS/GMRS channel at once** and shows, live, who is talking and
 which privacy code (CTCSS tone or DCS code) they are using — as the "privacy
