@@ -307,7 +307,7 @@ tools/paced_null_sink/    SDR++ sink that paces audio to real time (headless tes
 tests/oracle/dcsdecode.py the Python reference decoder (+ its unit tests)
 tests/run_parity.py       C++ vs Python vs ground truth over a synthetic corpus
 tests/make_iq.py          synthesises an IQ recording of a busy 462 block
-tests/corpus/             a real recording: eKids toy radio, ch 12, DCS 261
+tests/corpus/             your own recordings (gitignored) for run_parity.py
 .github/workflows/        the macOS build/release workflow
 ```
 

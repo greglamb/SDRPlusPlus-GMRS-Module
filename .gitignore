@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 *.csv
 .DS_Store
+tests/corpus/*
+!tests/corpus/README.md
