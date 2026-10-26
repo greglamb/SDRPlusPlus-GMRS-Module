@@ -228,7 +228,7 @@ SDR++ build it will run in, so it is built *inside* the SDR++ source tree.
 
 ```sh
 git clone https://github.com/AlexandreRouma/SDRPlusPlus.git
-git clone https://github.com/greglamb/SDRPlusPlus-GMRS-Plugin.git sdrpp-frsgmrs-monitor
+git clone https://github.com/greglamb/SDRPlusPlus-GMRS-Module.git sdrpp-frsgmrs-monitor
 sh sdrpp-frsgmrs-monitor/tools/install_in_tree.sh SDRPlusPlus
 ```
 
