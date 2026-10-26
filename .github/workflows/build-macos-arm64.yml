@@ -1,0 +1,95 @@
+# On-demand build of SDR++ (Apple Silicon) with the FRS/GMRS Monitor module
+# baked in. Run it from the Actions tab ("Run workflow"); download SDR++.app
+# from the run's artifacts.
+#
+# The app is unsigned: after unzipping, run
+#   xattr -dr com.apple.quarantine SDR++.app
+# once, or right-click → Open the first time.
+name: Build macOS (Apple Silicon)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdrpp_ref:
+        description: "SDR++ git ref to build against (branch, tag or commit)"
+        required: true
+        default: master
+      build_type:
+        description: "CMake build type"
+        required: true
+        default: Release
+        type: choice
+        options: [Release, RelWithDebInfo, Debug]
+
+jobs:
+  build:
+    runs-on: macos-15   # arm64 runner
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out this module
+        uses: actions/checkout@v4
+        with:
+          path: module
+
+      - name: Check out SDR++
+        uses: actions/checkout@v4
+        with:
+          repository: AlexandreRouma/SDRPlusPlus
+          ref: ${{ inputs.sdrpp_ref }}
+          path: sdrpp
+
+      - name: Install dependencies (Homebrew)
+        run: |
+          brew update
+          brew install pkg-config libusb fftw glfw volk zstd portaudio \
+                       librtlsdr airspy airspyhf hackrf
+
+      - name: Wire the module into the SDR++ tree
+        run: sh "$GITHUB_WORKSPACE/module/tools/install_in_tree.sh" "$GITHUB_WORKSPACE/sdrpp" --copy
+
+      - name: Configure
+        run: |
+          cmake -S sdrpp -B build \
+            -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            -DUSE_BUNDLE_DEFAULTS=ON \
+            -DOPT_BUILD_FRSGMRS_MONITOR=ON \
+            -DOPT_BUILD_RTL_SDR_SOURCE=ON \
+            -DOPT_BUILD_AIRSPY_SOURCE=ON \
+            -DOPT_BUILD_AIRSPYHF_SOURCE=ON \
+            -DOPT_BUILD_HACKRF_SOURCE=ON \
+            -DOPT_BUILD_FILE_SOURCE=ON \
+            -DOPT_BUILD_AUDIO_SINK=OFF \
+            -DOPT_BUILD_PORTAUDIO_SINK=ON \
+            -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON \
+            -DOPT_BUILD_AUDIO_SOURCE=OFF \
+            -DOPT_BUILD_M17_DECODER=OFF
+
+      - name: Build
+        run: cmake --build build -j"$(sysctl -n hw.ncpu)"
+
+      - name: Check the module linked
+        run: |
+          ls -l build/decoder_modules/frsgmrs_monitor/frsgmrs_monitor.dylib
+          file build/decoder_modules/frsgmrs_monitor/frsgmrs_monitor.dylib
+
+      - name: Make the .app bundle
+        working-directory: sdrpp
+        run: |
+          sh make_macos_bundle.sh "$GITHUB_WORKSPACE/build" ./SDR++.app
+          ls SDR++.app/Contents/Plugins | grep -q frsgmrs_monitor
+          SDRPP_SHA=$(git rev-parse --short HEAD)
+          MOD_SHA=$(git -C "$GITHUB_WORKSPACE/module" rev-parse --short HEAD)
+          ZIP="SDRpp-GMRS-macos-arm64-sdrpp_${SDRPP_SHA}-mod_${MOD_SHA}.zip"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+          ditto -c -k --keepParent SDR++.app "$GITHUB_WORKSPACE/$ZIP" 2>/dev/null || zip -qry "$GITHUB_WORKSPACE/$ZIP" SDR++.app
+
+      - name: Upload SDR++.app
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDR++-macos-arm64
+          path: ${{ env.ZIP }}
+          if-no-files-found: error
+          retention-days: 30

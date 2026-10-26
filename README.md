@@ -1,6 +1,6 @@
 # FRS/GMRS Monitor for SDR++
 
-An SDR++ module that watches **every FRS/GMRS channel at once** and shows, live,
+A module for [SDR++](https://github.com/AlexandreRouma/SDRPlusPlus) (Alexandre Rouma's cross-platform SDR software) that watches **every FRS/GMRS channel at once** and shows, live,
 who is talking and which privacy code (CTCSS tone or DCS code) they are using —
 as the consumer "privacy code" number your radio shows, plus the real tone/code.
 
@@ -35,13 +35,27 @@ to C++ and verified sample-for-sample against it (`tests/run_parity.py`).
 
 ## Requirements
 
-* SDR++ built from source, **v1.3.x master**. SDR++ has no stable plugin ABI:
+* [SDR++](https://github.com/AlexandreRouma/SDRPlusPlus) built from source, **v1.3.x master**. SDR++ has no stable plugin ABI:
   a module must be compiled against the exact SDR++ build it will run in, so
   this module is built *inside* the SDR++ tree (see below). It does not load
   into the stock nightly `.app`/`.exe`.
 * An SDR that does ≥ 250 kS/s (RTL-SDR, Airspy, HackRF, SDRplay …). The module
   needs a 200 kHz-wide VFO to see a whole block.
 * FFTW3 single precision (`fftw3f`) — SDR++ already needs FFTW, so it's there.
+
+## Prebuilt macOS app (Apple Silicon)
+
+The **Build macOS (Apple Silicon)** workflow under the repo's *Actions* tab
+builds SDR++ with this module baked in, on demand (*Run workflow* → pick the
+SDR++ ref, default `master`). Download `SDR++-macos-arm64` from the run's
+artifacts, unzip, and because it's unsigned run once:
+
+```sh
+xattr -dr com.apple.quarantine SDR++.app
+```
+
+It includes the RTL-SDR, Airspy, Airspy HF+, HackRF and File sources and the
+PortAudio sink. Then enable the module as in *Enable it* below.
 
 ## Build
 
