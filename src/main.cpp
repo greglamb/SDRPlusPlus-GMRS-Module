@@ -186,6 +186,9 @@ private:
     void loadConfig() {
         config.acquire();
         json& c = config.conf[name];
+        // First run: the entry doesn't exist yet and operator[] leaves a null,
+        // on which json::value() throws. Make it an object.
+        if (!c.is_object()) { c = json::object(); }
         blockIdx = c.value("block", 0);
         if (blockIdx < 0 || blockIdx >= (int)frsmon::frsBlocks().size()) { blockIdx = 0; }
         carrierThresholdDb = c.value("carrierThresholdDb", 8.0f);
@@ -250,6 +253,7 @@ private:
     void saveConfig() {
         config.acquire();
         json& c = config.conf[name];
+        if (!c.is_object()) { c = json::object(); }
         c["block"] = blockIdx;
         c["carrierThresholdDb"] = carrierThresholdDb;
         c["dcsInvert"] = dcsInvert;
