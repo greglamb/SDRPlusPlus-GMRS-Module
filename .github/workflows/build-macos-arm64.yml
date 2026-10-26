@@ -65,6 +65,7 @@ jobs:
             -DOPT_BUILD_PORTAUDIO_SINK=ON \
             -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON \
             -DOPT_BUILD_AUDIO_SOURCE=OFF \
+            -DOPT_BUILD_PLUTOSDR_SOURCE=OFF \
             -DOPT_BUILD_M17_DECODER=OFF
 
       - name: Build
