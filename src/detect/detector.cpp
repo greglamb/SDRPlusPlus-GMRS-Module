@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 #include "detector.h"
 #include "tables.h"
 

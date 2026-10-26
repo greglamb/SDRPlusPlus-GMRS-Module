@@ -1,4 +1,6 @@
 #pragma once
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) Alexandre Rouma (SDR++) - copied from decoder_modules/radio/src/radio_interface.h
 // Local copy of decoder_modules/radio/src/radio_interface.h (SDR++ master),
 // so this module builds out-of-tree without a path into the radio module.
 // Values are positional enums and have been stable since the interface was added.

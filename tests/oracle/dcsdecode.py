@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2026 Greg Lamb
 # /// script
 # requires-python = ">=3.9"
 # dependencies = ["numpy>=1.22", "scipy>=1.8"]

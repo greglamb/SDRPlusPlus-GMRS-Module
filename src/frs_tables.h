@@ -1,4 +1,6 @@
 #pragma once
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // FRS/GMRS channel plan. Two blocks 5 MHz apart; each is a contiguous
 // 12.5 kHz comb, which is what lets one wide VFO per block cover it.
 //

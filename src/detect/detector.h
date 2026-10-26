@@ -1,4 +1,6 @@
 #pragma once
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // CTCSS / DCS detection on demodulated NFM audio.
 //
 // Two layers:

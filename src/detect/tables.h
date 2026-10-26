@@ -1,4 +1,6 @@
 #pragma once
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // Tone and code tables shared by the detectors, the UI and the tests.
 // Numbering follows consumer FRS/GMRS radios (Motorola Talkabout, Midland,
 // Cobra, Rocky Talkie): CTCSS 1..38 in EIA order, DCS 39..121 in the 83-code

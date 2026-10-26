@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // Paced null audio sink for headless SDR++ test runs.
 //
 // SDR++ relies on the audio device to pace the whole pipeline; with no audio

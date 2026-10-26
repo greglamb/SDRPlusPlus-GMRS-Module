@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2026 Greg Lamb
 """Parity test: the C++ streaming detector vs. the Python oracle (dcsdecode.py).
 
 Builds a corpus of synthetic WAVs (every DCS code normal + some inverted, every

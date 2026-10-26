@@ -1,4 +1,6 @@
 #pragma once
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // Small, dependency-free DSP helpers for the sub-audible path.
 #include <algorithm>
 #include <cmath>

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2026 Greg Lamb
 """Synthesise an IQ recording of the FRS/GMRS 462 MHz block for SDR++'s File
 source: several radios keying up on different channels with DCS/CTCSS codes,
 voice on top, a weak one, a code-less one, two overlapping. Writes a 16-bit

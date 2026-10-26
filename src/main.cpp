@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // FRS/GMRS Monitor — SDR++ module
 //
 // Watches every FRS/GMRS channel of a block at once on its own wide VFO and

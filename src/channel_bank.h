@@ -1,4 +1,6 @@
 #pragma once
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // ChannelBank: one SDR++ sink block on the wide VFO that demodulates every
 // FRS/GMRS channel of the block in-line (one thread), measures IF power per
 // channel, decides carrier presence and feeds each channel's detector.

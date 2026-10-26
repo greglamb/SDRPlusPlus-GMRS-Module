@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Greg Lamb
 // parity_test: run the C++ ChannelDetector over a WAV file, streaming it in
 // chunks, with carrier spans supplied from a text file ("t0 t1" per line).
 // Prints one JSON line per span with the final code state and timings.

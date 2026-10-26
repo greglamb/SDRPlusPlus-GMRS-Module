@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2026 Greg Lamb
 # Wire this module into an SDR++ source tree so it builds with SDR++ itself.
 #
 #   tools/install_in_tree.sh /path/to/SDRPlusPlus [--copy] [--with-paced-sink]
